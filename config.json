@@ -1,0 +1,6 @@
+[
+    {
+        "name": "events",
+        "url": "http://gql_events:8000/gql"
+    }
+]
