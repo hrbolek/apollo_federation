@@ -13,7 +13,7 @@ const getENV = (name, defaultValue) => {
 
   if (typeof value === "undefined") {
     if (typeof defaultValue === "undefined") {
-      throw new Error(`Missing environment varialbe '${name}'`);
+      throw new Error(`Missing environment variable '${name}'`);
     }
     return defaultValue;
   }
@@ -24,7 +24,7 @@ const getENV = (name, defaultValue) => {
 // const fs = require('fs');
 
 const readConfig = () => {
-    // let rawdata = fs.readFileSync('config.json');
+    // const rawdata = fs.readFileSync('config.json');
 
     const rawdata = getENV("SERVICES", "[]");
     let config = JSON.parse(rawdata);
