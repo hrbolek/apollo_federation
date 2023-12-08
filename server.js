@@ -21,11 +21,33 @@ const getENV = (name, defaultValue) => {
   return value;
 };
 
-const fs = require('fs');
+// const fs = require('fs');
 
 const readConfig = () => {
-    let rawdata = fs.readFileSync('config.json');
+    // let rawdata = fs.readFileSync('config.json');
+
+    const rawdata = getENV("SERVICES", "[]");
     let config = JSON.parse(rawdata);
+
+    console.log(config)
+    if (config.length === 0) {
+        console.log("******************************************************************")
+        console.log("**            Missing SERVICES env ??                           **")
+        console.log("******************************************************************")
+        console.log("**                                                              **")
+        console.log("**                                                              **")
+        console.log("**services:                                                     **")
+        console.log("**  apollo:                                                     **")
+        console.log("**    image: hrbolek/apollo_federation                          **")
+        console.log("**    environment:                                              **")
+        console.log("**      - PORT=3000                                             **")
+        console.log("**      - |                                                     **")
+        console.log("**        SERVICES=                                             **")
+        console.log("**        [                                                     **")
+        console.log('**          {"name": "ug", "url": "http://gql_ug:8000/gql"}     **')
+        console.log("**        ]                                                     **")
+        console.log("******************************************************************")
+    }
     return config
 }
 

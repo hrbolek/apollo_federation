@@ -1,19 +1,20 @@
-# apollo_federation
-
-```yaml
 version: "3.9"
 
 services:
   apollo:
-    image: hrbolek/apollo_federation
+    image: apollo
+    build:
+      # context definuje cestu k popisu
+      context: .
     environment:
       # promenne, ktere lze cist v kontejneru
       - PORT=3000
-      - |
-        SERVICES=
-        [
-          {"name": "ug", "url": "http://gql_ug:8000/gql"}
-        ]
+      # - |
+      #   SERVICES=
+      #   [
+      #     {"name": "ug", "url": "http://gql_ug:8000/gql"}
+      #   ]
+
     healthcheck:
       # definice, umoznujici provest test, zda je kontejner v poradku (vsimnete si portu a srovnejte s portem v environment)
       interval: 60s
@@ -25,4 +26,3 @@ services:
     #   # vnejsi port : port, kde sluzbu poskytuje kontejner
       - 33000:3000
 
-```
