@@ -77,27 +77,40 @@ async function startApolloServer(config) {
           console.log(JSON.stringify(Object.keys(context)))
 
           if (incomingRequestContext) {
-              console.log('incomingRequestContext')
-              console.log(JSON.stringify(Object.keys(incomingRequestContext)))
+              // console.log('incomingRequestContext')
+              // console.log(JSON.stringify(Object.keys(incomingRequestContext)))
 
               const incRequest = incomingRequestContext.request
-              console.log(JSON.stringify(Object.keys(incRequest)))
+              // console.log(JSON.stringify(Object.keys(incRequest)))
 
               const headers = incRequest.http.headers
+              // console.log('headers: ' + headers)
+              // console.log(headers)
               const authHeaderValue = headers.get('Authorization')
-              console.log('authHeaderValue: ' + authHeaderValue)
+              // console.log('authHeaderValue: ' + authHeaderValue)
               for (const headerItem of headers) {
                   //toto funguje
-                  console.log('header item: ' + headerItem)
-                  console.log('header item type: ' + (typeof headerItem))
-                  console.log('header item: ' + JSON.stringify(headerItem))
-                  console.log('header item methods: ' + JSON.stringify(Object.keys(headerItem)))
+                  // console.log('header item: ' + headerItem)
+                  // console.log('header item type: ' + (typeof headerItem))
+                  // console.log('header item: ' + JSON.stringify(headerItem))
+                  // console.log('header item methods: ' + JSON.stringify(Object.keys(headerItem)))
                   if (headerItem[0].startsWith('Authorization')) {
                     const [key, value] = headerItem.split(' ')
                     request.http?.headers.set(key, String(value));
                   }
+                  if (headerItem[0].startsWith('authorization')) {
+                    const [key, value] = headerItem.split(' ')
+                    request.http?.headers.set(key, String(value));
+                  }
+                  if (headerItem[0].startsWith('cookie')) {
+                    request.http?.headers.set(headerItem[0], headerItem[1]);
+                  }
+
               }
-          }
+              console.log("final headers")
+              console.log(request.http?.headers)
+              console.log(JSON.stringify(request.http?.headers))
+      }
 
           //console.log(JSON.stringify(Object.keys(request)))
           //console.log(JSON.stringify(Object.keys(request.http)))
