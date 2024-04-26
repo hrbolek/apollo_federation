@@ -1,5 +1,6 @@
 //const { ApolloServer } = require("apollo-server");
 const { ApolloServer } = require("apollo-server-express");
+const { NoSchemaIntrospectionCustomRule } = require("graphql");
 
 const { ApolloGateway, IntrospectAndCompose, RemoteGraphQLDataSource } = require("@apollo/gateway");
 
@@ -141,7 +142,11 @@ async function startApolloServer(config) {
   const app = express();
   //const httpServer = http.createServer(app);
 
-  const server = new ApolloServer({ gateway });
+  const server = new ApolloServer({ 
+    gateway,
+    // disable introspection in production
+    validationRules: process.env.NODE_ENV === 'production' && [NoSchemaIntrospectionCustomRule],
+  });
 
   console.log('server pre start')
   await server.start()
@@ -157,5 +162,10 @@ async function startApolloServer(config) {
 
 }
 
+if (process.env.NODE_ENV === 'production') {
+  console.log('==RUNNING PRODUCITON BUILD==')
+} else {
+  console.log('running development build')
+}
 const config = readConfig();
 startApolloServer(config);
