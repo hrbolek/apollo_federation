@@ -1,4 +1,5 @@
 //const { ApolloServer } = require("apollo-server");
+const { json, OptionsJson } = require('body-parser');
 const { ApolloServer } = require("apollo-server-express");
 
 const { ApolloGateway, IntrospectAndCompose, RemoteGraphQLDataSource } = require("@apollo/gateway");
@@ -66,6 +67,7 @@ async function startApolloServer(config) {
     },
     //*/
     buildService({ name, url }) {
+      console.log("build service", name, url)
       return new RemoteGraphQLDataSource({
         url,
         willSendRequest(params) {
@@ -117,6 +119,7 @@ async function startApolloServer(config) {
           console.log('request for ', JSON.stringify(request.http.url))
           if (request.query) { console.log(JSON.stringify(request.query)) }
           if (request.variables) { console.log(JSON.stringify(request.variables)) }
+          if (request.operationName) { console.log(JSON.stringify(request.operationName)) }
 
           //console.log(JSON.stringify(request.context))
           //console.log(JSON.stringify(typeof context))
@@ -147,9 +150,31 @@ async function startApolloServer(config) {
   await server.start()
   console.log('server post start')
 
-  server.applyMiddleware({ app, path: '/api/gql' });
+  // app.use((req, res, next) => {
+  //   console.log('Request Type A:', req.method, req.body)
+  //   next()
+  // })
+
+  app.use(json())
+
+  app.use((req, res, next) => {
+    console.log('Request Type A2:', req.method, req.body)
+    next()
+  })
+  
+  server.applyMiddleware({ 
+    app, 
+    path: '/api/gql', 
+    cors: false, 
+    bodyParserConfig: false 
+  });
 
   const PORT = getENV("PORT", "3000");
+
+  // app.use((req, res, next) => {
+  //   console.log('Request Type B:', req.method, req.body)
+  //   next()
+  // })
 
   app.listen(PORT, () => {
     console.log(`🚀 Server ready at ${PORT}`);
