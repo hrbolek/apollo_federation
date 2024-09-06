@@ -17,7 +17,13 @@ RUN npm install
 # If you are building your code for production
 # RUN npm ci --only=production
 
+RUN npm install pm2 -g
+
 # Bundle app source
 COPY . .
 
-CMD ["node", "server"]
+# RUN useradd appuser && chown -R appuser /usr/src/app
+# USER appuser
+
+# CMD ["node", "server"]
+CMD ["pm2-runtime", "server.js"]
