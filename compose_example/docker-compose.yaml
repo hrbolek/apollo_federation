@@ -1,0 +1,40 @@
+services:
+  apollo:
+    image: hrbolek/apollo_federation
+    # build: 
+    #   context: ../
+    #   dockerfile: dockerfile
+    environment:
+      # promenne, ktere lze cist v kontejneru
+      - PORT=3000
+      - |
+        SERVICES=
+        [
+          {"name": "g1", "url": "http://g1:8000/gql"},
+          {"name": "g2", "url": "http://g2:8000/gql"}
+        ]
+    restart: on-failure:3 # nedojde k restartu pokud je kontejner "unhealthy", maximalne 3 pokusy
+    depends_on:
+      - g1
+      - g2
+
+  g1:
+    build: 
+      context: ./g1
+      dockerfile: dockerfile
+    
+  g2:
+    build: 
+      context: ./g2
+      dockerfile: dockerfile
+    ports: 
+      # vnejsi port : port, kde sluzbu poskytuje kontejner
+      - 33334:8000
+    
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    ports: 
+      # vnejsi port : port, kde sluzbu poskytuje kontejner
+      - 33333:8000
