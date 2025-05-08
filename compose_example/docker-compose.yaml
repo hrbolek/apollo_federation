@@ -17,6 +17,9 @@ services:
     depends_on:
       - g1
       - g2
+    ports: 
+      # vnejsi port : port, kde sluzbu poskytuje kontejner
+      - 33335:3000
 
   g1:
     build: 

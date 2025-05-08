@@ -3,8 +3,7 @@
 # First phase
 #
 ###############################################################
-# FROM node:14 as buildnode
-FROM node:18-alpine AS buildnode
+FROM node:14 as buildnode
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -27,6 +26,4 @@ COPY . .
 # USER appuser
 
 # CMD ["node", "server"]
-# CMD ["pm2-runtime", "server.js"]
-# CMD ["pm2-runtime", "server10.js"]
-CMD ["pm2-runtime", "server12.js"]
+CMD ["pm2-runtime", "server.js"]
