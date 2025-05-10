@@ -29,4 +29,4 @@ COPY . .
 # CMD ["node", "server"]
 # CMD ["pm2-runtime", "server.js"]
 # CMD ["pm2-runtime", "server10.js"]
-CMD ["pm2-runtime", "server.js"]
+CMD ["pm2-runtime", "server22.js"]

@@ -4,9 +4,9 @@ import fastapi
 import typing
 
 from strawberry.fastapi import GraphQLRouter
-@strawberry.federation.type(keys=["id"])
+@strawberry.federation.type(extend=True, keys=["id"])
 class ComplexGQLModel:
-    id: uuid.UUID = strawberry.federation.field()
+    id: uuid.UUID = strawberry.federation.field(external=True)
     x: str = strawberry.federation.field(external=True)
     y: str = strawberry.federation.field(external=True)
 
@@ -17,7 +17,7 @@ class ComplexGQLModel:
 
 @strawberry.federation.type(extend=True, keys=["id"])
 class UserGQLModel:
-    id: uuid.UUID = strawberry.federation.field()
+    id: uuid.UUID = strawberry.federation.field(external=True)
     name: str = strawberry.federation.field(external=True)
     vector: typing.List[int] = strawberry.federation.field(external=True)
     complex: typing.Optional[ComplexGQLModel] = strawberry.federation.field(external=True)
@@ -38,6 +38,8 @@ class UserGQLModel:
     @strawberry.federation.field(requires=["name", "vector", "complex{x y id value}"])
     def name_plus(self) -> typing.Optional[str]:
         if self.name is not None:
+            return f"{self.name} {self.vector}+ {self.complex}"
+        else:
             return f"{self.name} {self.vector}+ {self.complex}"
 
         return None

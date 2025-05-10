@@ -27,6 +27,6 @@ COPY . .
 # USER appuser
 
 # CMD ["node", "server"]
-# CMD ["pm2-runtime", "server.js"]
-# CMD ["pm2-runtime", "server10.js"]
 CMD ["pm2-runtime", "server.js"]
+# CMD ["pm2-runtime", "server10.js"]
+# CMD ["pm2-runtime", "server12.js"]
