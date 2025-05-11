@@ -124,10 +124,23 @@ const readConfig = () => {
 }
 
 const PORT = getENV("PORT", "3000");
-const APIGQL = '/api/gql'
-const APISDL = '/api/sdl'
-const APISDLOnly = '/sdl'
-const APIRAWFEDERATION = '/api/apollo'
+
+/**
+ * Here is available full federation v2 with sdl and with directives
+ */
+const APIGQL = getENV("APIGQL", '/api/gql');
+
+/**
+ * Here is available apollo federation v2 without sdl and thus without directives
+ */
+const APIRAWFEDERATION = getENV("APIRAWFEDERATION", '/api/apollo');
+
+/**
+ * Here is available graphql with sdl only
+ */
+const APISDLOnly = getENV("APISDLOnly", '/sdl');
+
+const APISDL = getENV("APISDL", '/api/sdl');
 
 
 /* Provede introspekci GraphQL schématu přes executor (např. fetch).
