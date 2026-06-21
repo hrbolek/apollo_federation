@@ -25,6 +25,7 @@
     "@graphql-tools/url-loader": "^8.0.31",
     "@graphql-tools/federation": "^3.2.1",
 
+    "jsonata": "^1.8.6",
     "node-fetch": "^3.3.2",
     "cross-fetch": "^4.1.0"
   },
