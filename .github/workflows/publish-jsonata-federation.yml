@@ -1,0 +1,111 @@
+name: Publish JSONata Federation Docker image
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      push_latest:
+        description: "Push latest tag for the default image variant"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  IMAGE_NAME: hrbolek/jsonata-federation
+  DOCKERFILE: Dockerfile.JSONata
+
+jobs:
+  push_to_registry:
+    name: Build and push ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: node22-alpine
+            node_image: node:22-alpine
+            is_default: true
+
+          - variant: node22-bookworm-slim
+            node_image: node:22-bookworm-slim
+            is_default: false
+
+          - variant: node20-alpine
+            node_image: node:20-alpine
+            is_default: false
+
+          - variant: node20-bookworm-slim
+            node_image: node:20-bookworm-slim
+            is_default: false
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Prepare Docker tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IMAGE="${IMAGE_NAME}"
+          VARIANT="${{ matrix.variant }}"
+          IS_DEFAULT="${{ matrix.is_default }}"
+          PUSH_LATEST="${{ github.event.inputs.push_latest || 'true' }}"
+
+          TAGS="${IMAGE}:${VARIANT}"
+          TAGS="${TAGS},${IMAGE}:sha-${GITHUB_SHA::7}-${VARIANT}"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+
+            TAGS="${TAGS},${IMAGE}:${RELEASE_TAG}-${VARIANT}"
+
+            if [[ "${IS_DEFAULT}" == "true" ]]; then
+              TAGS="${TAGS},${IMAGE}:${RELEASE_TAG}"
+
+              if [[ "${PUSH_LATEST}" == "true" ]]; then
+                TAGS="${TAGS},${IMAGE}:latest"
+              fi
+            fi
+          else
+            if [[ "${IS_DEFAULT}" == "true" && "${PUSH_LATEST}" == "true" ]]; then
+              TAGS="${TAGS},${IMAGE}:latest"
+            fi
+          fi
+
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Show Docker tags
+        run: |
+          echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n'
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ env.DOCKERFILE }}
+          push: true
+          build-args: |
+            NODE_IMAGE=${{ matrix.node_image }}
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=jsonata-federation
+            org.opencontainers.image.description=Runtime-configurable JSONata based GraphQL-like facade for REST APIs
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}

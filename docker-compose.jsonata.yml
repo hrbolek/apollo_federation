@@ -1,0 +1,15 @@
+services:
+  serverjsonata:
+    # context: .
+
+    build:
+      context: .
+      dockerfile: Dockerfile.JSONata
+    ports:
+      - "8303:3000"
+    environment:
+      PORT: "3000"
+      ENDPOINTS_CONFIG_PATH: /app/config/endpoints.json
+      FORWARD_HEADERS: cookie,authorization,accept-language,x-request-id
+    volumes:
+      - ./serverjsonata/endpoints.json:/app/config/endpoints.json:ro

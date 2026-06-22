@@ -1,0 +1,38 @@
+[
+  {
+    "name": "healthOne",
+    "method": "POST",
+    "url": "http://localhost:3000/health",
+    "forwardHeaders": true,
+    "requestTransform": "{ \"id\": args.id, \"name\": args.name, \"source\": \"healthOne\", \"nested\": { \"value\": args.value } }",
+    "responseTransform": "{ \"ok\": ok, \"service\": \"self-health-one\", \"requestMethod\": method, \"originalPayload\": payload, \"payloadId\": payload.id, \"payloadName\": payload.name, \"payloadValue\": payload.nested.value, \"forwardedHeaders\": forwardedHeaders }",
+    "selectionMap": {
+      "ok": "ok",
+      "service": "service",
+      "method": "requestMethod",
+      "id": "payloadId",
+      "name": "payloadName",
+      "value": "payloadValue",
+      "payload": "originalPayload",
+      "forwardedHeaders": "forwardedHeaders"
+    }
+  },
+  {
+    "name": "healthTwo",
+    "method": "POST",
+    "url": "http://localhost:3000/health",
+    "forwardHeaders": true,
+    "requestTransform": "{ \"external_id\": args.id, \"display_name\": args.name, \"source\": \"healthTwo\", \"meta\": { \"amount\": args.value } }",
+    "responseTransform": "{ \"ok\": ok, \"service\": \"self-health-two\", \"requestMethod\": method, \"raw\": payload, \"id\": payload.external_id, \"title\": payload.display_name, \"amount\": payload.meta.amount, \"forwardedHeaders\": forwardedHeaders }",
+    "selectionMap": {
+      "ok": "ok",
+      "service": "service",
+      "method": "requestMethod",
+      "id": "id",
+      "name": "title",
+      "value": "amount",
+      "payload": "raw",
+      "forwardedHeaders": "forwardedHeaders"
+    }
+  }
+]

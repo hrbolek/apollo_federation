@@ -1,0 +1,12 @@
+services:
+  serverjsonata:
+    build: .
+    container_name: serverjsonata
+    ports:
+      - "8303:3000"
+    environment:
+      PORT: "3000"
+      ENDPOINTS_CONFIG_PATH: /app/config/endpoints.json
+      FORWARD_HEADERS: cookie,authorization,accept-language,x-request-id
+    volumes:
+      - ./endpoints.json:/app/config/endpoints.json:ro
