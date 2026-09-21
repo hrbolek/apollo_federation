@@ -108,7 +108,6 @@ app.get("/debug/query", async (req, res) => {
     }
 
     let variables = {};
-
     const variablesRaw = req.query.variables ?? req.query.vars;
 
     if (variablesRaw !== undefined) {
@@ -248,7 +247,8 @@ app.post("/graphql", async (req, res) => {
             }
 
             const endpointName = rootSelection.name.value;
-            const responseFieldName = rootSelection.alias?.value ?? endpointName;
+            const responseFieldName =
+                rootSelection.alias?.value ?? endpointName;
 
             const endpoint = registry.get(endpointName);
 
@@ -262,7 +262,10 @@ app.post("/graphql", async (req, res) => {
             }
 
             try {
-                const args = readArguments(rootSelection.arguments ?? [], variables);
+                const args = readArguments(
+                    rootSelection.arguments ?? [],
+                    variables
+                );
 
                 const upstreamRaw = await callEndpoint(
                     endpoint,
@@ -272,7 +275,10 @@ app.post("/graphql", async (req, res) => {
                 );
 
                 const transformed = endpoint.responseTransform
-                    ? await evaluateJsonata(endpoint.responseTransform, upstreamRaw)
+                    ? await evaluateJsonata(
+                        endpoint.responseTransform,
+                        upstreamRaw
+                    )
                     : upstreamRaw;
 
                 const selected = await applySelectionSet(
@@ -297,7 +303,9 @@ app.post("/graphql", async (req, res) => {
             responseBody.errors = errors;
         }
 
-        return res.status(errors.length > 0 ? 207 : 200).json(responseBody);
+        return res
+            .status(errors.length > 0 ? 207 : 200)
+            .json(responseBody);
     } catch (error) {
         return res.status(500).json({
             errors: [
@@ -324,11 +332,15 @@ function loadEndpointsFromConfiguration(registry) {
     try {
         configs = JSON.parse(raw);
     } catch (error) {
-        throw new Error(`Invalid endpoint configuration JSON: ${error.message}`);
+        throw new Error(
+            `Invalid endpoint configuration JSON: ${error.message}`
+        );
     }
 
     if (!Array.isArray(configs)) {
-        throw new Error("Endpoint configuration must be a JSON array.");
+        throw new Error(
+            "Endpoint configuration must be a JSON array."
+        );
     }
 
     for (const config of configs) {
@@ -340,14 +352,18 @@ function loadEndpointsFromConfiguration(registry) {
 
 function readEndpointConfiguration() {
     if (process.env.ENDPOINTS_JSON) {
-        console.log("Loading endpoint configuration from ENDPOINTS_JSON.");
+        console.log(
+            "Loading endpoint configuration from ENDPOINTS_JSON."
+        );
         return process.env.ENDPOINTS_JSON;
     }
 
     if (process.env.ENDPOINTS_CONFIG_PATH) {
         const configPath = process.env.ENDPOINTS_CONFIG_PATH;
 
-        console.log(`Loading endpoint configuration from file: ${configPath}`);
+        console.log(
+            `Loading endpoint configuration from file: ${configPath}`
+        );
 
         if (!fs.existsSync(configPath)) {
             throw new Error(
@@ -363,12 +379,14 @@ function readEndpointConfiguration() {
 
 function getOperation(document, operationName) {
     const operations = document.definitions.filter(
-        definition => definition.kind === Kind.OPERATION_DEFINITION
+        definition =>
+            definition.kind === Kind.OPERATION_DEFINITION
     );
 
     if (operationName) {
         return operations.find(
-            operation => operation.name?.value === operationName
+            operation =>
+                operation.name?.value === operationName
         );
     }
 
@@ -382,16 +400,24 @@ function getOperation(document, operationName) {
 async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
     const url =
         endpoint.buildUrl?.(args, variables) ??
-        buildUrlFromTemplate(endpoint.urlTemplate, args) ??
+        buildUrlFromTemplate(
+            endpoint.urlTemplate,
+            args
+        ) ??
         endpoint.url;
 
     if (!url) {
-        throw new Error(`Endpoint '${endpoint.name}' has no URL.`);
+        throw new Error(
+            `Endpoint '${endpoint.name}' has no URL.`
+        );
     }
 
     const method = (endpoint.method ?? "GET").toUpperCase();
 
-    const headers = buildForwardHeaders(endpoint, incomingHeaders);
+    const headers = buildForwardHeaders(
+        endpoint,
+        incomingHeaders
+    );
 
     const fetchOptions = {
         method,
@@ -415,13 +441,19 @@ async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
         fetchOptions.body = JSON.stringify(body);
     }
 
-    const response = await fetch(url, fetchOptions);
-    const text = await response.text();
+    const response =
+        await fetch(url, fetchOptions);
+
+    const text =
+        await response.text();
 
     let payload;
 
     try {
-        payload = text ? JSON.parse(text) : null;
+        payload =
+            text
+                ? JSON.parse(text)
+                : null;
     } catch {
         throw new Error(
             `Endpoint '${endpoint.name}' did not return valid JSON. Status: ${response.status}`
@@ -458,20 +490,27 @@ async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
  *     "forwardHeaders": true
  *   }
  */
-function buildForwardHeaders(endpoint, incomingHeaders = {}) {
+function buildForwardHeaders(
+    endpoint,
+    incomingHeaders = {}
+) {
     const headers = {};
 
     if (endpoint.forwardHeaders === true) {
-        const allowedHeaders = getAllowedForwardHeaders();
+        const allowedHeaders =
+            getAllowedForwardHeaders();
 
         for (const headerName of allowedHeaders) {
             const value = getHeaderCaseInsensitive(incomingHeaders, headerName);
 
-            if (value === undefined) {
+            if (
+                value === undefined
+            ) {
                 continue;
             }
 
-            headers[headerName] = Array.isArray(value)
+            headers[headerName] =
+                Array.isArray(value)
                 ? value.join(", ")
                 : String(value);
         }
@@ -497,16 +536,34 @@ function getAllowedForwardHeaders() {
 
     return raw
         .split(",")
-        .map(header => header.trim().toLowerCase())
+        .map(
+            header =>
+                header
+                    .trim()
+                    .toLowerCase()
+        )
         .filter(Boolean)
-        .filter(header => !isHopByHopHeader(header));
+        .filter(
+            header =>
+                !isHopByHopHeader(header)
+        );
 }
 
-function getHeaderCaseInsensitive(headers, wantedName) {
-    const wantedLowerName = wantedName.toLowerCase();
+function getHeaderCaseInsensitive(
+    headers,
+    wantedName
+) {
+    const wantedLowerName =
+        wantedName.toLowerCase();
 
-    for (const [name, value] of Object.entries(headers)) {
-        if (name.toLowerCase() === wantedLowerName) {
+    for (
+        const [name, value]
+        of Object.entries(headers)
+    ) {
+        if (
+            name.toLowerCase() ===
+            wantedLowerName
+        ) {
             return value;
         }
     }
@@ -526,33 +583,52 @@ function isHopByHopHeader(name) {
         "proxy-authorization",
         "te",
         "trailer"
-    ].includes(name.toLowerCase());
+    ].includes(
+        name.toLowerCase()
+    );
 }
 
-function readArguments(args, variables) {
+function readArguments(
+    args,
+    variables
+) {
     const result = {};
 
     for (const arg of args) {
-        result[arg.name.value] = readValue(arg.value, variables);
+        result[arg.name.value] =
+            readValue(
+                arg.value,
+                variables
+            );
     }
 
     return result;
 }
 
-function readValue(node, variables) {
+function readValue(
+    node,
+    variables
+) {
     switch (node.kind) {
         case Kind.VARIABLE:
-            return variables[node.name.value];
+            return variables[
+                node.name.value
+            ];
 
         case Kind.STRING:
         case Kind.ENUM:
             return node.value;
 
         case Kind.INT:
-            return Number.parseInt(node.value, 10);
+            return Number.parseInt(
+                node.value,
+                10
+            );
 
         case Kind.FLOAT:
-            return Number.parseFloat(node.value);
+            return Number.parseFloat(
+                node.value
+            );
 
         case Kind.BOOLEAN:
             return node.value;
@@ -561,23 +637,41 @@ function readValue(node, variables) {
             return null;
 
         case Kind.LIST:
-            return node.values.map(value => readValue(value, variables));
+            return node.values.map(
+                value =>
+                    readValue(
+                        value,
+                        variables
+                    )
+            );
 
         case Kind.OBJECT:
             return Object.fromEntries(
-                node.fields.map(field => [
+                node.fields.map(
+                    field => [
                     field.name.value,
-                    readValue(field.value, variables)
-                ])
+                        readValue(
+                            field.value,
+                            variables
+                        )
+                    ]
+                )
             );
 
         default:
-            throw new Error(`Unsupported GraphQL value kind '${node.kind}'.`);
+            throw new Error(
+                `Unsupported GraphQL value kind '${node.kind}'.`
+            );
     }
 }
 
-const port = Number(process.env.PORT ?? 3000);
+const port =
+    Number(
+        process.env.PORT ?? 3000
+    );
 
 app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}/graphql`);
+    console.log(
+        `Server listening on http://localhost:${port}/graphql`
+    );
 });
