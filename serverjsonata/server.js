@@ -9,6 +9,12 @@ import {
     evaluateJsonata
 } from "./endpointRegistry.js";
 
+import {
+    readGraphqlPayload,
+    buildMultipartBody,
+    stripFilesForJsonata
+} from "./multipart.js";
+
 const app = express();
 
 app.use(express.json({
@@ -211,7 +217,12 @@ app.get("/debug/query", async (req, res) => {
 
 app.post("/graphql", async (req, res) => {
     try {
-        const { query, variables = {}, operationName } = req.body ?? {};
+        const payload = await readGraphqlPayload(req);
+        const {
+            query,
+            variables = {},
+            operationName
+        } = payload ?? {};
 
         if (!query) {
             return res.status(400).json({
@@ -397,7 +408,13 @@ function getOperation(document, operationName) {
     return operations.find(operation => !operation.name);
 }
 
-async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
+
+async function callEndpoint(
+    endpoint,
+    args,
+    variables,
+    incomingHeaders = {}
+) {
     const url =
         endpoint.buildUrl?.(args, variables) ??
         buildUrlFromTemplate(
@@ -412,7 +429,17 @@ async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
         );
     }
 
-    const method = (endpoint.method ?? "GET").toUpperCase();
+    const method =
+        (endpoint.method ?? "GET")
+            .toUpperCase();
+
+    const requestEncoding =
+        (
+            endpoint.requestEncoding ??
+            endpoint.encoding ??
+            "json"
+        )
+            .toLowerCase();
 
     const headers = buildForwardHeaders(
         endpoint,
@@ -424,21 +451,64 @@ async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
         headers
     };
 
-    if (method !== "GET" && method !== "HEAD") {
-        let body;
+    if (
+        method !== "GET" &&
+        method !== "HEAD"
+    ) {
+        if (requestEncoding === "multipart") {
+            fetchOptions.body =
+                await buildMultipartBody(
+                    endpoint,
+                    args,
+                    variables
+                );
 
-        if (endpoint.requestTransform) {
-            body = await evaluateJsonata(endpoint.requestTransform, {
-                args,
-                variables
-            });
-        } else if (endpoint.body !== undefined) {
-            body = endpoint.body;
+            /*
+             * FormData must generate its own Content-Type including boundary.
+             * Never reuse the incoming request's multipart boundary.
+             */
+            deleteHeaderCaseInsensitive(
+                fetchOptions.headers,
+                "content-type"
+            );
+        } else if (
+            requestEncoding === "json"
+        ) {
+            let body;
+
+            if (endpoint.requestTransform) {
+                body = await evaluateJsonata(
+                    endpoint.requestTransform,
+                    {
+                        args:
+                            stripFilesForJsonata(args),
+                        variables:
+                            stripFilesForJsonata(
+                                variables
+                            )
+                    }
+                );
+            } else if (
+                endpoint.body !== undefined
+            ) {
+                body = endpoint.body;
+            } else {
+                body = args;
+            }
+
+            fetchOptions.body =
+                JSON.stringify(body);
+
+            setHeaderCaseInsensitive(
+                fetchOptions.headers,
+                "content-type",
+                "application/json"
+            );
         } else {
-            body = args;
+            throw new Error(
+                `Unsupported requestEncoding '${requestEncoding}' for endpoint '${endpoint.name}'.`
+            );
         }
-
-        fetchOptions.body = JSON.stringify(body);
     }
 
     const response =
@@ -467,6 +537,17 @@ async function callEndpoint(endpoint, args, variables, incomingHeaders = {}) {
     }
 
     return payload;
+}
+
+
+function isFileLike(value) {
+    return (
+        value !== null &&
+        typeof value === "object" &&
+        typeof value.arrayBuffer === "function" &&
+        typeof value.stream === "function" &&
+        typeof value.type === "string"
+    );
 }
 
 /**
@@ -500,8 +581,30 @@ function buildForwardHeaders(
         const allowedHeaders =
             getAllowedForwardHeaders();
 
-        for (const headerName of allowedHeaders) {
-            const value = getHeaderCaseInsensitive(incomingHeaders, headerName);
+        for (
+            const headerName
+            of allowedHeaders
+        ) {
+            /*
+             * Content-Type and Content-Length describe the incoming HTTP body.
+             * They must not be forwarded to a newly constructed upstream body.
+             */
+            if (
+                [
+                    "content-type",
+                    "content-length"
+                ].includes(
+                    headerName.toLowerCase()
+                )
+            ) {
+                continue;
+            }
+
+            const value =
+                getHeaderCaseInsensitive(
+                    incomingHeaders,
+                    headerName
+                );
 
             if (
                 value === undefined
@@ -511,20 +614,20 @@ function buildForwardHeaders(
 
             headers[headerName] =
                 Array.isArray(value)
-                ? value.join(", ")
-                : String(value);
+                    ? value.join(", ")
+                    : String(value);
         }
     }
 
     return {
         ...headers,
-        "content-type": "application/json",
         ...(endpoint.headers ?? {})
     };
 }
 
 function getAllowedForwardHeaders() {
-    const raw = process.env.FORWARD_HEADERS;
+    const raw =
+        process.env.FORWARD_HEADERS;
 
     if (raw === undefined) {
         return [
@@ -569,6 +672,40 @@ function getHeaderCaseInsensitive(
     }
 
     return undefined;
+}
+
+function setHeaderCaseInsensitive(
+    headers,
+    name,
+    value
+) {
+    deleteHeaderCaseInsensitive(
+        headers,
+        name
+    );
+
+    headers[name.toLowerCase()] =
+        value;
+}
+
+function deleteHeaderCaseInsensitive(
+    headers,
+    wantedName
+) {
+    const wantedLowerName =
+        wantedName.toLowerCase();
+
+    for (
+        const name
+        of Object.keys(headers)
+    ) {
+        if (
+            name.toLowerCase() ===
+            wantedLowerName
+        ) {
+            delete headers[name];
+        }
+    }
 }
 
 function isHopByHopHeader(name) {
@@ -649,7 +786,7 @@ function readValue(
             return Object.fromEntries(
                 node.fields.map(
                     field => [
-                    field.name.value,
+                        field.name.value,
                         readValue(
                             field.value,
                             variables
