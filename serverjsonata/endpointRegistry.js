@@ -26,6 +26,7 @@ import jsonata from "jsonata";
  *   "name": "userSearch",
  *   "method": "POST",
  *   "url": "https://example.com/api/users/search",
+ *   "queryTransform": "{ \"skip\": 0, \"where\": { \"name\": { \"_ilike\": \"%\" & args.term & \"%\" } }, \"take\": 25 }",
  *   "requestTransform": "{ \"search\": args.term, \"limit\": args.limit ? args.limit : 20 }",
  *   "responseTransform": "{ \"items\": users.{ \"id\": user_id, \"name\": full_name }, \"total\": total_count }",
  *   "selectionMap": {
@@ -105,6 +106,12 @@ function validateEndpointConfig(config) {
     );
   }
 
+  if (config.queryTransform && typeof config.queryTransform !== "string") {
+    throw new Error(
+      `Endpoint '${config.name}' property 'queryTransform' must be a JSONata string.`
+    );
+  }
+
   if (config.responseTransform && typeof config.responseTransform !== "string") {
     throw new Error(
       `Endpoint '${config.name}' property 'responseTransform' must be a JSONata string.`
@@ -147,6 +154,48 @@ export function buildUrlFromTemplate(template, args = {}) {
 }
 
 /**
+ * Appends a query object to a URL.
+ *
+ * Scalars are encoded as normal query parameter values. Objects and arrays
+ * are JSON-serialized first, which is useful for Hasura-like filters such as:
+ *
+ * {
+ *   skip: 0,
+ *   where: { name: { _ilike: "%ora%" } },
+ *   order_by: "",
+ *   take: 25
+ * }
+ *
+ * Undefined and null values are omitted. Existing query parameters are kept.
+ */
+export function appendQueryObjectToUrl(url, query) {
+  if (query === undefined || query === null) {
+    return url;
+  }
+
+  if (typeof query !== "object" || Array.isArray(query)) {
+    throw new Error("queryTransform must evaluate to a JSON object.");
+  }
+
+  const parsed = new URL(url);
+
+  for (const [name, value] of Object.entries(query)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const serialized =
+      typeof value === "object"
+        ? JSON.stringify(value)
+        : String(value);
+
+    parsed.searchParams.set(name, serialized);
+  }
+
+  return parsed.toString();
+}
+
+/**
  * Evaluates a JSONata expression.
  *
  * The caller decides what input object is used. Typical inputs:
@@ -154,7 +203,7 @@ export function buildUrlFromTemplate(template, args = {}) {
  * responseTransform:
  *   input = upstream JSON response
  *
- * requestTransform:
+ * requestTransform / queryTransform:
  *   input = { args, variables }
  */
 export async function evaluateJsonata(expressionText, input) {

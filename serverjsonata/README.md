@@ -615,3 +615,15 @@ services:
       FORWARD_HEADERS: cookie,authorization,accept-language,x-request-id
     volumes:
       - ./endpoints.json:/app/config/endpoints.json:ro
+
+
+## Post in Firefox
+
+Headers 
+
+`Content-Type`=`application/json`
+
+Body
+```json
+http://localhost:8303/graphql
+```

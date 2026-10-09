@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JSONata Federation Playground</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            font-family: monospace;
+        }
+
+        pre {
+            background: #eee;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>JSONata Federation Playground</h1>
+
+<h2>Query</h2>
+
+<textarea id="query">
+query {
+  whoami
+}
+</textarea>
+
+<textarea id="variables" placeholder="Variables (JSON)">
+{
+  "userId": "123"
+}
+</textarea>
+
+<br>
+
+<button onclick="executeQuery()">
+    Execute
+</button>
+
+<h2>Response</h2>
+
+<pre id="response"></pre>
+
+<script>
+
+async function executeQuery() {
+
+    const endpoint = "/graphql";
+
+    const query =
+        document.getElementById("query").value;
+
+    const variables =
+        JSON.parse(
+            document.getElementById("variables").value
+        );
+
+    const responseElement =
+        document.getElementById("response");
+
+    responseElement.textContent =
+        "Loading...";
+
+    try {
+
+        const response =
+            await fetch(endpoint, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    query,
+                    variables
+                })
+            });
+
+        const data =
+            await response.json();
+
+        responseElement.textContent =
+            JSON.stringify(
+                data,
+                null,
+                2
+            );
+
+    }
+    catch (error) {
+
+        responseElement.textContent =
+            error.toString();
+    }
+}
+
+</script>
+
+</body>
+</html>

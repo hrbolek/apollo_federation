@@ -6,6 +6,7 @@ import {
     EndpointRegistry,
     applySelectionSet,
     buildUrlFromTemplate,
+    appendQueryObjectToUrl,
     evaluateJsonata
 } from "./endpointRegistry.js";
 
@@ -415,7 +416,7 @@ async function callEndpoint(
     variables,
     incomingHeaders = {}
 ) {
-    const url =
+    let url =
         endpoint.buildUrl?.(args, variables) ??
         buildUrlFromTemplate(
             endpoint.urlTemplate,
@@ -427,6 +428,18 @@ async function callEndpoint(
         throw new Error(
             `Endpoint '${endpoint.name}' has no URL.`
         );
+    }
+
+    if (endpoint.queryTransform) {
+        const query = await evaluateJsonata(
+            endpoint.queryTransform,
+            {
+                args: stripFilesForJsonata(args),
+                variables: stripFilesForJsonata(variables)
+            }
+        );
+
+        url = appendQueryObjectToUrl(url, query);
     }
 
     const method =

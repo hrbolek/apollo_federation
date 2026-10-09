@@ -667,3 +667,25 @@ export function stripFilesForJsonata(value) {
 
     return value;
 }
+
+function getHeaderCaseInsensitive(
+    headers,
+    wantedName
+) {
+    const wantedLowerName =
+        wantedName.toLowerCase();
+
+    for (
+        const [name, value]
+        of Object.entries(headers)
+    ) {
+        if (
+            name.toLowerCase() ===
+            wantedLowerName
+        ) {
+            return value;
+        }
+    }
+
+    return undefined;
+}
