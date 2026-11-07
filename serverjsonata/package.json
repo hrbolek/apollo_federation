@@ -1,0 +1,16 @@
+{
+  "name": "jsonata-federation",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "GraphQL-like gateway over REST APIs driven by JSONata transformations",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "graphql": "^16.11.0",
+    "jsonata": "^1.8.6"
+  }
+}

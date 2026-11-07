@@ -1,3 +1,5 @@
+import { evaluateJsonata } from "./endpointRegistry.js";
+
 /**
  * Reads either:
  *
